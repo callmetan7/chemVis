@@ -9,7 +9,8 @@ const formula = "H2SO4"
 const elements = [];
 const regex = /([A-Z][a-z]*)(\d*)/g;
 let match;
-id = 0;
+let id = 0;
+let centralIndex = 0;
 
 while ((match = regex.exec(formula)) !== null) {
     const symbol = match[1];
@@ -44,15 +45,13 @@ for(let element = 0; element < elements.length; element++){
 }
 
 // Identiy Central Atom based on electronegativity
-let leastEN = 3.98;
-let centralAtom = "";
+let maxEN = 3.98;
+let centralAtom = {};
 for(let element = 0; element < elements.length; element++){
-    if(elements[element]["electronegativity"] < leastEN && elements[element]["symbol"] != "H"){
-        leastEN = elements[element]["electronegativity"]
-        centralAtom = elements[element]
+    let x = elements[element];
+    if(x["electronegativity"] < maxEN && x['symbol'] != 'H'){
+        maxEN = x['electronegativity']
+        x['type'] = 'cen'
     }
-    if(centralAtom == elements[element]["symbol"]){
-        elements[element]["type"] = "central"
-    }
-    else {elements[element]["type"] = "non"}
-} 
+    else {x['type'] = 'non'}
+}

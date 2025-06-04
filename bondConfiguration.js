@@ -75,3 +75,4 @@ function canBond(atom1, atom2, currentBonds1, currentBonds2){
     }
     return (currentBonds1 < maxbond1) && (currentBonds2 < maxBonds2)
 }
+

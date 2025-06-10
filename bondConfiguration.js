@@ -1,18 +1,16 @@
 const fs = require('fs');
-
+const Atom = require('./Atom.js')
 // Read the periodic table
 const ptable = JSON.parse(fs.readFileSync('PeriodicTableJSON.json'))
 // const input = prompt("Molecule: ")
-const formula = "H2O"
+const formula = "H2SO4"
 
 // Parsing the formula => "H2O" -> [{symbol: 'H', count: 2}, ...]
 const elements = [];
 const regex = /([A-Z][a-z]*)(\d*)/g;
 let match;
 let id = 0;
-const bonds = [
-
-];
+let hasH;
 
 while ((match = regex.exec(formula)) !== null) {
     const symbol = match[1];
@@ -27,7 +25,6 @@ while ((match = regex.exec(formula)) !== null) {
 }
 
 // Generate valency count for each atom and electronegativity value
-
 // Add the index of the element into the elements list to reduce time for future lookups
 const lastDigit = (num) => num % 10;
 for(let element = 0; element < elements.length; element++){
@@ -38,14 +35,18 @@ for(let element = 0; element < elements.length; element++){
         }
     }
 
-    elements[element]["valence"] = 8 - (lastDigit(ptable["elements"][elements[element]["index"]]["group"]))
+    elements[element]["valence"] = (lastDigit(ptable["elements"][elements[element]["index"]]["group"]))
     if(ptable["elements"][elements[element]["index"]]["electronegativity_pauling"] == null) {
         console.log("Electronegatvity invalid")
     } else {
         elements[element]["electronegativity"] = ptable["elements"][elements[element]["index"]]["electronegativity_pauling"]
     }
+    elements[element]['bonds'] = []
+    if((elementSymbol) == 'H'){
+        hasH = true;
+    }
 }
-
+console.log(elements)
 // Identiy Central Atom based on electronegativity
 let maxEN = 3.98;
 let centralAtom = 0;
@@ -58,21 +59,35 @@ for(let element = 0; element < elements.length; element++){
     }
     else {x['type'] = 'non'}
 }
-
-function canBond(atom1, atom2, currentBonds1, currentBonds2){
+function canBond(atom1, atom2, currentBonds1=[], currentBonds2=[]){
     let v1 = atom1['valence'];
     let v2 = atom2['valence'];
+
+    let maxBond1, maxBond2;
     
     if(atom1['symbol'] == 'H'){
-        let maxBond1 = 1;
+        maxBond1 = 1;
     }
     else if(atom2['symbol'] == 'H'){
-        let maxBond2 = 1;
+        maxBond2 = 1;
     }
     else{
-        let maxBond1 = 8 - v1;
-        let maxBond2 = 8 - v2;
+        maxBond1 = 8 - v1;
+        maxBond2 = 8 - v2;
     }
-    return (currentBonds1 < maxbond1) && (currentBonds2 < maxBonds2)
+    return (currentBonds1.length < maxBond1) && (currentBonds2.length < maxBond2)
 }
 
+// Bond the non-H atoms first since H is usually the terminal atom in most molecules
+for(let element = 0; element < elements.length; element++){
+    let x = elements[element];
+    if(x.type != 'cen'){
+        if(x.symbol != 'H' && canBond(elements[centralAtom], x, elements[centralAtom]['bonds'], x['bonds'])){
+            elements[centralAtom]['bonds'].push(([x,1]));
+            x['bonds'].push([elements[centralAtom], 1]);
+
+            x['valence'] = x['valence'] - 1;
+            elements[centralAtom]['valence'] += -1;
+        }
+    }
+}

@@ -58,3 +58,4 @@ class Atom {
         this.valence = this.valence - atom.getValence()
     }
 }
+module.exports = {Atom}

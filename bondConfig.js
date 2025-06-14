@@ -48,8 +48,15 @@ class MoleculeBuilder {
     // Simplified valence calculation
     if (atom.symbol === 'H') return 1;
     const lastDigit = atom.group % 10;
-    return lastDigit > 4 ? 8 - lastDigit : lastDigit;
+
+    if (['S', 'P', 'Cl', 'Br', 'I'].includes(atom.symbol) && atom.bonds.length > 4) {
+      return 12; // Allow for expanded octet
+    }
+    else {
+      return lastDigit > 4 ? 8 - lastDigit : lastDigit;
+    }
   }
+  
 
   calculateLonePairs(atom) {
     // Basic lone pair estimation
@@ -170,18 +177,61 @@ class MoleculeBuilder {
       });
     });
   }
+
+  predictGeometry() {
+    const central = this.atoms[this.centralAtomIndex];
+    const stericNumber = this.calculateStericNumber(central);
+    const lonePairs = this.countLonePairs(central);
+
+    // VSEPR theory geometry mapping
+    const vseprTable = {
+      2: { 0: 'linear' },
+      3: { 0: 'trigonal planar', 1: 'bent' },
+      4: { 0: 'tetrahedral', 1: 'trigonal pyramidal', 2: 'bent' },
+      5: { 0: 'trigonal bipyramidal', 1: 'see-saw', 2: 'T-shaped', 3: 'linear' },
+      6: { 0: 'octahedral', 1: 'square pyramidal', 2: 'square planar' }
+    };
+
+    return vseprTable[stericNumber]?.[lonePairs] || 'unknown';
+  }
+
+  calculateStericNumber(atom) {
+    // Steric number = σ bonds + lone pairs
+    return atom.bonds.length + this.countLonePairs(atom);
+  }
+
+  countLonePairs(atom) {
+    // Calculate using: LP = (Valence e- - bonding e-) / 2
+    const valence = this.calculateValence(atom);
+    const bondingElectrons = this.getBondOrderSum(atom);
+    return Math.max(0, Math.floor((valence - bondingElectrons) / 2));
+  }
+
+  // Update printStructure to show geometry
+  printStructure() {
+    console.log(`Molecule: ${this.formula}`);
+    console.log("Central atom:", this.atoms[this.centralAtomIndex].symbol);
+    console.log("Molecular geometry:", this.predictGeometry());
+    
+    console.log("\nBonds:");
+    const printed = new Set();
+    this.atoms.forEach(atom1 => {
+      atom1.bonds.forEach((atom2Id, i) => {
+        const bondKey = [atom1.id, atom2Id].sort().join('-');
+        if (!printed.has(bondKey)) {
+          const atom2 = this.atoms.find(a => a.id === atom2Id);
+          const bondType = ['-', '=', '≡'][atom1.bondOrders[i] - 1] || '-';
+          console.log(`${atom1.symbol}${bondType}${atom2.symbol} (order: ${atom1.bondOrders[i]})`);
+          printed.add(bondKey);
+        }
+      });
+    });
+  }
 }
 
-// Example usage
-const formula = "H2SO4";
-const molecule = new MoleculeBuilder(formula);
-molecule.formBonds();
-molecule.printStructure();
-
-
-const testCases = ["CO2", "C2H4", "H2O", "CH2O", "CN"];
-testCases.forEach(formula => {
-  console.log("\nTesting:", formula);
+const testMolecules = ["CH4", "NH3", "H2O", "CO2", "BF3", "SF6"];
+testMolecules.forEach(formula => {
+  console.log("\n=== Testing:", formula, "===");
   const mol = new MoleculeBuilder(formula);
   mol.formBonds();
   mol.printStructure();

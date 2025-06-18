@@ -9,7 +9,7 @@
   },
   "keywords": [],
   "author": "Tanuj Padaliya",
-  "license": "ISC",
+  "license": "MIT",
   "type": "commonjs",
   "dependencies": {
     "three": "^0.177.0",
